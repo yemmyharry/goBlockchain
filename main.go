@@ -1,16 +1,18 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 )
 
 type Block struct {
-	Timestamp    int64
-	Transactions []string
-	PrevHash     string
-	Nonce        int
+	Timestamp    int64    `json:"timestamp"`
+	Transactions []string `json:"transactions"`
+	PrevHash     string   `json:"prev_hash"`
+	Nonce        int      `json:"nonce"`
 }
 
 type Blockchain struct {
@@ -55,13 +57,20 @@ func (b *Block) Print() {
 	fmt.Printf("Nonce: %d\n", b.Nonce)
 }
 
+func (b *Block) Hash() [32]byte {
+	m, _ := json.Marshal(b)
+	fmt.Println(string(m))
+	return sha256.Sum256([]byte(m))
+}
+
 func init() {
 	log.SetPrefix("Blockchain: ")
 }
 
 func main() {
-	blockchain := NewBlockchain()
-	blockchain.CreateBlock(12, "hash 2")
-	blockchain.Print()
+	//blockchain := NewBlockchain()
+	//blockchain.CreateBlock(12, "hash 2")
+	//blockchain.Print()
+	fmt.Printf("%x \n", NewBlock(13, "hash 3").Hash())
 	log.Println("My blocks")
 }
