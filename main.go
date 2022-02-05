@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var MINING_DIFFICULTY = 3
+
 type Block struct {
 	Timestamp    int64          `json:"timestamp"`
 	Transactions []*Transaction `json:"transactions"`
@@ -20,6 +22,39 @@ type Transaction struct {
 	Sender    string  `json:"sender"`
 	Recipient string  `json:"recipient"`
 	Amount    float32 `json:"amount"`
+}
+
+func (bc *Blockchain) CopyTransactionPool() []*Transaction {
+	var txs []*Transaction
+	for _, tx := range bc.TransactionPool {
+		txs = append(txs, NewTransaction(tx.Sender, tx.Recipient, tx.Amount))
+	}
+	return txs
+}
+
+func (bc *Blockchain) ValidProof(nonce int, prevHash [32]byte, transactions []*Transaction, difficulty int) bool {
+	zeros := strings.Repeat("0", difficulty)
+	guess := Block{
+		Timestamp:    time.Now().Unix(),
+		Transactions: transactions,
+		PrevHash:     prevHash,
+		Nonce:        nonce,
+	}
+	guessHash := guess.Hash()
+	guessHashStr := fmt.Sprintf("%x", guessHash)
+
+	return guessHashStr[:difficulty] == zeros
+}
+
+func (bc *Blockchain) ProofOfWork() int {
+	transactions := bc.CopyTransactionPool()
+	lastBlock := bc.LastBlock()
+	prevHash := lastBlock.Hash()
+	nonce := 0
+	for !bc.ValidProof(nonce, prevHash, transactions, MINING_DIFFICULTY) {
+		nonce += 1
+	}
+	return nonce
 }
 
 func NewTransaction(sender, recipient string, amount float32) *Transaction {
@@ -101,11 +136,13 @@ func main() {
 	blockchain.Print()
 	blockchain.AddTransaction("Alice", "Bob", 100)
 	previousHash := blockchain.LastBlock().Hash()
-	blockchain.CreateBlock(12, previousHash)
+	nonce := blockchain.ProofOfWork()
+	blockchain.CreateBlock(nonce, previousHash)
 	blockchain.Print()
 
 	previousHash = blockchain.LastBlock().Hash()
-	blockchain.CreateBlock(240, previousHash)
+	nonce = blockchain.ProofOfWork()
+	blockchain.CreateBlock(nonce, previousHash)
 	blockchain.Print()
 	log.Println("My blocks")
 }
